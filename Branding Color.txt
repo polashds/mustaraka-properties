@@ -1,0 +1,30 @@
+Luxury
+Dark Prestige
+Deep navy/charcoal base with gold accents — premium feel for high-end property clients
+Primary
+Surface
+Accent
+Highlight
+Light
+View Property
+Premium
+Gulshan · Banani · Baridhara
+Background
+#0D0D1A
+Surface
+#1A1A2E
+CTA / Accent
+#C9A84C
+Text on dark
+#F5F5F0
+
+
+--gold:       #C9A84C;
+--gold-light: #E8CC7A;
+--dark:       #0A0A0A;
+--dark2:      #111111;
+--dark3:      #1A1A1A;
+--surface:    #1E1E1E;
+--text:       #F0EDE8;
+--text-muted: #8A8580;
+--border:     rgba(201,168,76,0.2);
