@@ -1,13 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/properties", label: "Properties" },
-  { href: "/services", label: "Services" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
-];
+import { navLinks } from "@/lib/nav";
+import { WHATSAPP_HREF, COMPANY_EMAIL } from "@/lib/constants";
 
 export default function Footer() {
   return (
@@ -59,15 +53,15 @@ export default function Footer() {
             <ul className="space-y-3 text-sm text-brand-muted">
               <li>
                 <a
-                  href="mailto:info@mustarakaproperties.com"
+                  href={`mailto:${COMPANY_EMAIL}`}
                   className="hover:text-gold transition-colors duration-200"
                 >
-                  info@mustarakaproperties.com
+                  {COMPANY_EMAIL}
                 </a>
               </li>
               <li>
                 <a
-                  href="https://wa.me/8801XXXXXXXXX"
+                  href={WHATSAPP_HREF}
                   className="hover:text-whatsapp transition-colors duration-200"
                 >
                   WhatsApp Enquiry

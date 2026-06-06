@@ -41,16 +41,16 @@ export default function HomePage() {
               <option className="bg-brand-surface" value="">
                 Property Type
               </option>
-              <option className="bg-brand-surface" value="apartment">
+              <option className="bg-brand-surface" value="Apartment">
                 Apartment
               </option>
-              <option className="bg-brand-surface" value="house">
+              <option className="bg-brand-surface" value="House">
                 House
               </option>
-              <option className="bg-brand-surface" value="commercial">
+              <option className="bg-brand-surface" value="Commercial">
                 Commercial
               </option>
-              <option className="bg-brand-surface" value="land">
+              <option className="bg-brand-surface" value="Land">
                 Land
               </option>
             </select>
@@ -65,16 +65,16 @@ export default function HomePage() {
               <option className="bg-brand-surface" value="">
                 Select City
               </option>
-              <option className="bg-brand-surface" value="dhaka">
+              <option className="bg-brand-surface" value="Dhaka">
                 Dhaka
               </option>
-              <option className="bg-brand-surface" value="chittagong">
+              <option className="bg-brand-surface" value="Chittagong">
                 Chittagong
               </option>
-              <option className="bg-brand-surface" value="sylhet">
+              <option className="bg-brand-surface" value="Sylhet">
                 Sylhet
               </option>
-              <option className="bg-brand-surface" value="rajshahi">
+              <option className="bg-brand-surface" value="Rajshahi">
                 Rajshahi
               </option>
             </select>
