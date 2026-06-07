@@ -1,0 +1,42 @@
+name: mustaraka
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - db
+    networks:
+      - internal
+      - proxy
+    volumes:
+      - uploads:/app/public/uploads
+    mem_limit: 1g
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.mustaraka.rule=Host(`mustarakaproperties.com`) || Host(`www.mustarakaproperties.com`)"
+      - "traefik.http.routers.mustaraka.entrypoints=websecure"
+      - "traefik.http.routers.mustaraka.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mustaraka.loadbalancer.server.port=3000"
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mustaraka
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: mustaraka
+    networks:
+      - internal
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    mem_limit: 1g
+
+networks:
+  internal:
+  proxy:
+    external: true
+
+volumes:
+  pgdata:
+  uploads:
