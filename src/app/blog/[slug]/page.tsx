@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 import { PostStatus } from "@prisma/client";
 import { marked } from "marked";
 

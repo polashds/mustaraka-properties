@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { prisma } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 import { formatPrice } from "@/lib/format";
 import ImageGallery from "@/components/ImageGallery";
 import InquiryForm from "@/components/InquiryForm";

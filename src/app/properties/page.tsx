@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { prisma } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 import { PropertyType, ListingType, PropertyStatus, Prisma } from "@prisma/client";
 import FilterBar from "@/components/FilterBar";
 import PropertyCard from "@/components/PropertyCard";

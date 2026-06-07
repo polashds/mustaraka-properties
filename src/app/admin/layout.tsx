@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import AdminLayoutShell from "./_components/AdminLayoutShell";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Admin — Mustaraka Properties",
 };
