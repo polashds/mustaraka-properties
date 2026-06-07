@@ -19,6 +19,16 @@ const ContactSchema = z.object({
   message: z.string().optional(),
 });
 
+function fireWebhook(payload: Record<string, unknown>) {
+  const url = process.env.N8N_LEAD_WEBHOOK_URL;
+  if (!url) return;
+  void fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+}
+
 export async function submitInquiry(formData: FormData) {
   const raw = {
     name: formData.get("name"),
@@ -31,7 +41,7 @@ export async function submitInquiry(formData: FormData) {
   const parsed = InquirySchema.safeParse(raw);
   if (!parsed.success) return { success: false };
 
-  await prisma.lead.create({
+  const lead = await prisma.lead.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email || null,
@@ -40,6 +50,17 @@ export async function submitInquiry(formData: FormData) {
       source: LeadSource.Property,
       propertyId: parsed.data.propertyId ?? null,
     },
+  });
+
+  fireWebhook({
+    id: lead.id,
+    name: lead.name,
+    email: lead.email,
+    phone: lead.phone,
+    message: lead.message,
+    source: lead.source,
+    propertyId: lead.propertyId,
+    createdAt: lead.createdAt,
   });
 
   return { success: true };
@@ -56,7 +77,7 @@ export async function submitContact(formData: FormData) {
   const parsed = ContactSchema.safeParse(raw);
   if (!parsed.success) return { success: false };
 
-  await prisma.lead.create({
+  const lead = await prisma.lead.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email || null,
@@ -64,6 +85,16 @@ export async function submitContact(formData: FormData) {
       message: parsed.data.message || null,
       source: LeadSource.Contact,
     },
+  });
+
+  fireWebhook({
+    id: lead.id,
+    name: lead.name,
+    email: lead.email,
+    phone: lead.phone,
+    message: lead.message,
+    source: lead.source,
+    createdAt: lead.createdAt,
   });
 
   return { success: true };

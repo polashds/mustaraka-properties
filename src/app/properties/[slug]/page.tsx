@@ -23,9 +23,23 @@ export async function generateMetadata({
   const { slug } = await params;
   const property = await getProperty(slug);
   if (!property) return {};
+  const description = property.description.slice(0, 155);
+  const image = property.images[0]?.url;
   return {
     title: `${property.title} — Mustaraka Properties`,
-    description: property.description.slice(0, 155),
+    description,
+    openGraph: {
+      title: property.title,
+      description,
+      type: "website",
+      ...(image && { images: [{ url: image, alt: property.title }] }),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: property.title,
+      description,
+      ...(image && { images: [image] }),
+    },
   };
 }
 
@@ -38,6 +52,7 @@ export default async function PropertyDetailPage({
   const property = await getProperty(slug);
   if (!property) notFound();
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mustarakaproperties.com";
   const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
   const waMessage = encodeURIComponent(
     `Hello, I am interested in: ${property.title}`
@@ -60,8 +75,33 @@ export default async function PropertyDetailPage({
     { label: "City", value: property.city },
   ].filter(Boolean) as { label: string; value: string | number }[];
 
+  const listingSchema = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: property.title,
+    description: property.description,
+    url: `${siteUrl}/properties/${property.slug}`,
+    ...(property.images[0]?.url && { image: property.images[0].url }),
+    offers: {
+      "@type": "Offer",
+      price: property.price.toNumber(),
+      priceCurrency: "BDT",
+      availability: "https://schema.org/InStock",
+    },
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: property.address,
+      addressLocality: property.city,
+      addressCountry: "BD",
+    },
+  };
+
   return (
     <div className="bg-brand-bg min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(listingSchema) }}
+      />
       {/* Gallery — full width */}
       <div className="bg-brand-surface">
         <div className="max-w-5xl mx-auto px-6 lg:px-8 pt-8 pb-6">

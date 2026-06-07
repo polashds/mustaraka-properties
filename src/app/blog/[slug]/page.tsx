@@ -19,9 +19,23 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { slug } = await params;
   const post = await getPost(slug);
   if (!post) return {};
+  const description = post.excerpt ?? post.body.slice(0, 155);
   return {
     title: `${post.title} — Mustaraka Properties Blog`,
-    description: post.excerpt ?? post.body.slice(0, 155),
+    description,
+    openGraph: {
+      title: post.title,
+      description,
+      type: "article",
+      publishedTime: post.createdAt.toISOString(),
+      ...(post.featuredImage && { images: [{ url: post.featuredImage, alt: post.title }] }),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description,
+      ...(post.featuredImage && { images: [post.featuredImage] }),
+    },
   };
 }
 
@@ -36,8 +50,34 @@ export default async function BlogPostPage({ params }: { params: Params }) {
 
   const htmlBody = await marked.parse(post.body, { async: true });
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mustarakaproperties.com";
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    description: post.excerpt ?? post.body.slice(0, 155),
+    url: `${siteUrl}/blog/${post.slug}`,
+    datePublished: post.createdAt.toISOString(),
+    dateModified: post.updatedAt.toISOString(),
+    ...(post.featuredImage && { image: post.featuredImage }),
+    author: {
+      "@type": "Organization",
+      name: "Mustaraka Properties",
+      url: siteUrl,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Mustaraka Properties",
+      url: siteUrl,
+    },
+  };
+
   return (
     <div className="bg-brand-bg min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
       {/* Featured image */}
       {post.featuredImage && (
         <div className="w-full max-h-[520px] overflow-hidden bg-brand-surface">
