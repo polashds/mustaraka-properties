@@ -17,7 +17,7 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.mustaraka.rule=Host(`mustarakaproperties.com`) || Host(`www.mustarakaproperties.com`)"
       - "traefik.http.routers.mustaraka.entrypoints=websecure"
-      - "traefik.http.routers.mustaraka.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.mustaraka.tls.certresolver=le"
       - "traefik.http.services.mustaraka.loadbalancer.server.port=3000"
   db:
     image: postgres:16
