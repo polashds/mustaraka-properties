@@ -6,6 +6,10 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  ADMIN
+}
+
 enum PropertyType {
   Apartment
   House
@@ -52,4 +56,13 @@ model PropertyImage {
   alt        String
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  hashedPassword String
+  role           UserRole @default(ADMIN)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
