@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
 import { PostStatus, PropertyStatus } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mustarakaproperties.com";
 
 const staticRoutes: MetadataRoute.Sitemap = [

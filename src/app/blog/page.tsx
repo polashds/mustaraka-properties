@@ -4,6 +4,8 @@ import Image from "next/image";
 import { prisma } from "@/lib/db";
 import { PostStatus } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Blog — Mustaraka Properties",
   description:

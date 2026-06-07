@@ -1,4 +1,4 @@
-name: mustaraka
+name: mustaraka-app
 services:
   app:
     build: .
