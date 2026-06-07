@@ -186,7 +186,7 @@ export default async function PropertyDetailPage({
               <h3 className="font-heading font-light text-brand-text text-xl mb-5">
                 Send an Enquiry
               </h3>
-              <InquiryForm propertyTitle={property.title} />
+              <InquiryForm propertyTitle={property.title} propertyId={property.id} />
             </div>
           </aside>
         </div>

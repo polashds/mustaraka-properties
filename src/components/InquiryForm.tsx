@@ -5,9 +5,10 @@ import { submitInquiry } from "@/lib/actions";
 
 interface Props {
   propertyTitle: string;
+  propertyId?: number;
 }
 
-export default function InquiryForm({ propertyTitle }: Props) {
+export default function InquiryForm({ propertyTitle, propertyId }: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -15,6 +16,7 @@ export default function InquiryForm({ propertyTitle }: Props) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     formData.set("property", propertyTitle);
+    if (propertyId) formData.set("propertyId", String(propertyId));
     startTransition(async () => {
       await submitInquiry(formData);
       setSubmitted(true);
@@ -39,32 +41,10 @@ export default function InquiryForm({ propertyTitle }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <input
-        type="text"
-        name="name"
-        placeholder="Full Name *"
-        required
-        className={field}
-      />
-      <input
-        type="email"
-        name="email"
-        placeholder="Email Address *"
-        required
-        className={field}
-      />
-      <input
-        type="tel"
-        name="phone"
-        placeholder="Phone Number"
-        className={field}
-      />
-      <textarea
-        name="message"
-        placeholder="Your message..."
-        rows={4}
-        className={`${field} resize-none`}
-      />
+      <input type="text" name="name" placeholder="Full Name *" required className={field} />
+      <input type="email" name="email" placeholder="Email Address *" required className={field} />
+      <input type="tel" name="phone" placeholder="Phone Number" className={field} />
+      <textarea name="message" placeholder="Your message…" rows={4} className={`${field} resize-none`} />
       <button
         type="submit"
         disabled={isPending}

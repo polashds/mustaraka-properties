@@ -5,6 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import AdminLogoutButton from "./AdminLogoutButton";
 
+const navItems = [
+  { href: "/admin", label: "Dashboard" },
+  { href: "/admin/properties", label: "Properties" },
+  { href: "/admin/blog", label: "Blog" },
+  { href: "/admin/leads", label: "Leads" },
+  { href: "/", label: "View Site", external: true },
+];
+
 export default function AdminLayoutShell({
   children,
 }: {
@@ -38,26 +46,27 @@ export default function AdminLayoutShell({
             </span>
           </div>
 
-          <nav className="flex items-center gap-6">
-            <Link
-              href="/admin"
-              className="font-body text-xs font-medium text-brand-muted hover:text-gold tracking-[0.15em] uppercase transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/admin/properties"
-              className="font-body text-xs font-medium text-brand-muted hover:text-gold tracking-[0.15em] uppercase transition-colors"
-            >
-              Properties
-            </Link>
-            <Link
-              href="/"
-              target="_blank"
-              className="font-body text-xs font-medium text-brand-muted hover:text-gold tracking-[0.15em] uppercase transition-colors"
-            >
-              View Site
-            </Link>
+          <nav className="flex items-center gap-5">
+            {navItems.map((item) =>
+              item.external ? (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  target="_blank"
+                  className="font-body text-xs font-medium text-brand-muted hover:text-gold tracking-[0.15em] uppercase transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="font-body text-xs font-medium text-brand-muted hover:text-gold tracking-[0.15em] uppercase transition-colors"
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
             <AdminLogoutButton />
           </nav>
         </div>
