@@ -41,6 +41,8 @@ export async function uploadImages(formData: FormData): Promise<string[]> {
 
 // ── Property validation ───────────────────────────────────────────────────────
 
+const LAND_AREA_UNITS = ["Katha", "Decimal", "Bigha", "sqft"] as const;
+
 const PropertySchema = z.object({
   title: z.string().min(1, "Title is required"),
   slug: z
@@ -55,6 +57,11 @@ const PropertySchema = z.object({
   bedrooms: z.coerce.number().int().positive().optional().nullable(),
   bathrooms: z.coerce.number().int().positive().optional().nullable(),
   area: z.coerce.number().positive().optional().nullable(),
+  floor: z.coerce.number().int().nonnegative().optional().nullable(),
+  parking: z.coerce.number().int().nonnegative().optional().nullable(),
+  landAreaUnit: z.enum(LAND_AREA_UNITS).optional().nullable(),
+  roadWidth: z.coerce.number().positive().optional().nullable(),
+  landUse: z.string().optional().nullable(),
   address: z.string().min(1, "Address is required"),
   city: z.string().min(1, "City is required"),
   latitude: z.coerce.number().optional().nullable(),
@@ -82,14 +89,15 @@ export async function createProperty(formData: FormData) {
 
   const raw = Object.fromEntries(
     ["title","slug","description","price","type","listingType","status",
-     "bedrooms","bathrooms","area","address","city","latitude","longitude",
-     "featured","hot"].map((k) => [k, formData.get(k)])
+     "bedrooms","bathrooms","area","floor","parking","landAreaUnit","roadWidth","landUse",
+     "address","city","latitude","longitude","featured","hot"].map((k) => [k, formData.get(k)])
   );
 
-  // Treat empty strings as null for optional numerics
-  ["bedrooms","bathrooms","area","latitude","longitude"].forEach((k) => {
+  ["bedrooms","bathrooms","area","floor","parking","roadWidth","latitude","longitude"].forEach((k) => {
     if (raw[k] === "" || raw[k] === null) raw[k] = null;
   });
+  if (raw["landAreaUnit"] === "" || raw["landAreaUnit"] === null) raw["landAreaUnit"] = null;
+  if (raw["landUse"] === "" || raw["landUse"] === null) raw["landUse"] = null;
 
   const parsed = PropertySchema.safeParse(raw);
   if (!parsed.success) {
@@ -125,13 +133,15 @@ export async function updateProperty(id: number, formData: FormData) {
 
   const raw = Object.fromEntries(
     ["title","slug","description","price","type","listingType","status",
-     "bedrooms","bathrooms","area","address","city","latitude","longitude",
-     "featured","hot"].map((k) => [k, formData.get(k)])
+     "bedrooms","bathrooms","area","floor","parking","landAreaUnit","roadWidth","landUse",
+     "address","city","latitude","longitude","featured","hot"].map((k) => [k, formData.get(k)])
   );
 
-  ["bedrooms","bathrooms","area","latitude","longitude"].forEach((k) => {
+  ["bedrooms","bathrooms","area","floor","parking","roadWidth","latitude","longitude"].forEach((k) => {
     if (raw[k] === "" || raw[k] === null) raw[k] = null;
   });
+  if (raw["landAreaUnit"] === "" || raw["landAreaUnit"] === null) raw["landAreaUnit"] = null;
+  if (raw["landUse"] === "" || raw["landUse"] === null) raw["landUse"] = null;
 
   const parsed = PropertySchema.safeParse(raw);
   if (!parsed.success) {

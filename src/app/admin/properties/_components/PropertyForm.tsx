@@ -15,6 +15,12 @@ const nullablePositiveInt = z
   .optional()
   .nullable();
 
+const nullableNonNegInt = z
+  .union([z.number().int().nonnegative(), z.nan(), z.null(), z.undefined()])
+  .transform((v) => (v == null || (typeof v === "number" && isNaN(v)) ? null : v))
+  .optional()
+  .nullable();
+
 const nullablePositiveFloat = z
   .union([z.number().positive(), z.nan(), z.null(), z.undefined()])
   .transform((v) => (v == null || (typeof v === "number" && isNaN(v)) ? null : v))
@@ -27,6 +33,9 @@ const nullableFloat = z
   .optional()
   .nullable();
 
+const LAND_AREA_UNITS = ["Katha", "Decimal", "Bigha", "sqft"] as const;
+const LAND_USE_OPTIONS = ["Residential", "Commercial", "Agricultural", "Industrial", "Mixed"] as const;
+
 const PropertyFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   slug: z
@@ -38,9 +47,19 @@ const PropertyFormSchema = z.object({
   type: z.enum(["Apartment", "House", "Commercial", "Land"]),
   listingType: z.enum(["Sale", "Rent"]),
   status: z.enum(["Draft", "Published"]),
+  // residential
   bedrooms: nullablePositiveInt,
   bathrooms: nullablePositiveInt,
+  floor: nullableNonNegInt,
+  // shared area field (sqft for residential/commercial; land area for Land)
   area: nullablePositiveFloat,
+  // commercial
+  parking: nullableNonNegInt,
+  // land
+  landAreaUnit: z.enum(LAND_AREA_UNITS).optional().nullable(),
+  roadWidth: nullablePositiveFloat,
+  landUse: z.string().optional().nullable(),
+  // location
   address: z.string().min(1, "Address is required"),
   city: z.string().min(1, "City is required"),
   latitude: nullableFloat,
@@ -79,10 +98,11 @@ function FieldError({ msg }: { msg?: string }) {
   return <p className="font-body text-xs text-red-400 mt-1">{msg}</p>;
 }
 
-function Label({ children }: { children: React.ReactNode }) {
+function Label({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
   return (
     <label className="block font-body text-[11px] tracking-[0.2em] text-brand-muted uppercase mb-1.5">
       {children}
+      {optional && <span className="ml-1 normal-case tracking-normal text-brand-muted/50">(optional)</span>}
     </label>
   );
 }
@@ -93,7 +113,6 @@ const inputCls =
 const selectCls =
   "w-full bg-brand-bg border border-gold/20 px-4 py-2.5 font-body text-sm text-brand-text focus:outline-none focus:border-gold/50 transition-colors cursor-pointer";
 
-// Set empty numeric inputs to NaN → null via transform
 const numericOpts = { valueAsNumber: true } as const;
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -127,13 +146,16 @@ export default function PropertyForm({
     },
   });
 
-  // Auto-generate slug from title (create mode, while slug empty)
-  const titleValue = watch("title");
+  const propertyType = watch("type");
+  const isResidential = propertyType === "Apartment" || propertyType === "House";
+  const isCommercial = propertyType === "Commercial";
+  const isLand = propertyType === "Land";
+
   function handleTitleBlur() {
     if (mode === "create") {
       const current = watch("slug");
       if (!current) {
-        setValue("slug", slugify(titleValue || ""), { shouldValidate: true });
+        setValue("slug", slugify(watch("title") || ""), { shouldValidate: true });
       }
     }
   }
@@ -162,7 +184,6 @@ export default function PropertyForm({
 
     const fd = new FormData();
 
-    // Scalar fields
     (Object.keys(data) as Array<keyof PropertyFormValues>).forEach((key) => {
       const val = data[key];
       if (val !== null && val !== undefined) {
@@ -170,29 +191,41 @@ export default function PropertyForm({
       }
     });
 
-    if (mode === "create") {
-      newFiles.forEach((f) => fd.append("images", f));
-      newFiles.forEach(() => fd.append("imageAlts", ""));
-      const result = await createProperty(fd);
-      if (result?.errors) setServerError("Please fix the errors above.");
-    } else if (mode === "edit" && propertyId !== undefined) {
-      fd.append("existingImages", JSON.stringify(images));
-      newFiles.forEach((f) => fd.append("newImages", f));
-      newFiles.forEach(() => fd.append("newImageAlts", ""));
-      const result = await updateProperty(propertyId, fd);
-      if (result?.errors) setServerError("Please fix the errors above.");
+    try {
+      if (mode === "create") {
+        newFiles.forEach((f) => fd.append("images", f));
+        newFiles.forEach(() => fd.append("imageAlts", ""));
+        const result = await createProperty(fd);
+        // result is only returned on validation error; redirect() on success navigates away
+        if (result?.errors) {
+          const msgs = Object.values(result.errors).flat().join(" ");
+          setServerError(msgs || "Validation failed — check the fields above.");
+          setSubmitting(false);
+        }
+      } else if (mode === "edit" && propertyId !== undefined) {
+        fd.append("existingImages", JSON.stringify(images));
+        newFiles.forEach((f) => fd.append("newImages", f));
+        newFiles.forEach(() => fd.append("newImageAlts", ""));
+        const result = await updateProperty(propertyId, fd);
+        if (result?.errors) {
+          const msgs = Object.values(result.errors).flat().join(" ");
+          setServerError(msgs || "Validation failed — check the fields above.");
+          setSubmitting(false);
+        }
+      }
+    } catch {
+      // redirect() throws NEXT_REDIRECT — that means success. Any other throw is a real error.
+      // We can't distinguish them here, so only reset on unexpected errors by checking the message.
+      setServerError("An unexpected error occurred. Please try again.");
+      setSubmitting(false);
     }
-
-    setSubmitting(false);
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {/* ── Core details ── */}
       <section className="bg-brand-surface border border-gold/15 p-6 space-y-5">
-        <h2 className="font-heading font-light text-brand-text text-xl mb-1">
-          Core Details
-        </h2>
+        <h2 className="font-heading font-light text-brand-text text-xl mb-1">Core Details</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
@@ -270,49 +303,149 @@ export default function PropertyForm({
             <FieldError msg={errors.listingType?.message} />
           </div>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div>
-            <Label>Bedrooms</Label>
-            <input
-              {...register("bedrooms", numericOpts)}
-              type="number"
-              min="1"
-              className={inputCls}
-              placeholder="3"
-            />
-            <FieldError msg={errors.bedrooms?.message} />
-          </div>
-          <div>
-            <Label>Bathrooms</Label>
-            <input
-              {...register("bathrooms", numericOpts)}
-              type="number"
-              min="1"
-              className={inputCls}
-              placeholder="2"
-            />
-            <FieldError msg={errors.bathrooms?.message} />
-          </div>
-          <div>
-            <Label>Area (sq ft)</Label>
-            <input
-              {...register("area", numericOpts)}
-              type="number"
-              step="0.01"
-              className={inputCls}
-              placeholder="1850"
-            />
-            <FieldError msg={errors.area?.message} />
-          </div>
-        </div>
       </section>
+
+      {/* ── Specifications (conditional on type) ── */}
+      {propertyType && (
+        <section className="bg-brand-surface border border-gold/15 p-6 space-y-5">
+          <h2 className="font-heading font-light text-brand-text text-xl mb-1">
+            Specifications
+          </h2>
+
+          {/* Residential: Apartment / House */}
+          {isResidential && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+              <div>
+                <Label optional>Bedrooms</Label>
+                <input
+                  {...register("bedrooms", numericOpts)}
+                  type="number"
+                  min="1"
+                  className={inputCls}
+                  placeholder="3"
+                />
+                <FieldError msg={errors.bedrooms?.message} />
+              </div>
+              <div>
+                <Label optional>Bathrooms</Label>
+                <input
+                  {...register("bathrooms", numericOpts)}
+                  type="number"
+                  min="1"
+                  className={inputCls}
+                  placeholder="2"
+                />
+                <FieldError msg={errors.bathrooms?.message} />
+              </div>
+              <div>
+                <Label optional>Floor No.</Label>
+                <input
+                  {...register("floor", numericOpts)}
+                  type="number"
+                  min="0"
+                  className={inputCls}
+                  placeholder="4"
+                />
+                <FieldError msg={errors.floor?.message} />
+              </div>
+              <div>
+                <Label optional>Floor Area (sq ft)</Label>
+                <input
+                  {...register("area", numericOpts)}
+                  type="number"
+                  step="0.01"
+                  className={inputCls}
+                  placeholder="1850"
+                />
+                <FieldError msg={errors.area?.message} />
+              </div>
+            </div>
+          )}
+
+          {/* Commercial */}
+          {isCommercial && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <Label optional>Floor Area (sq ft)</Label>
+                <input
+                  {...register("area", numericOpts)}
+                  type="number"
+                  step="0.01"
+                  className={inputCls}
+                  placeholder="3200"
+                />
+                <FieldError msg={errors.area?.message} />
+              </div>
+              <div>
+                <Label optional>Parking Spaces</Label>
+                <input
+                  {...register("parking", numericOpts)}
+                  type="number"
+                  min="0"
+                  className={inputCls}
+                  placeholder="2"
+                />
+                <FieldError msg={errors.parking?.message} />
+              </div>
+            </div>
+          )}
+
+          {/* Land / Plot */}
+          {isLand && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div>
+                  <Label optional>Land Area</Label>
+                  <input
+                    {...register("area", numericOpts)}
+                    type="number"
+                    step="0.001"
+                    className={inputCls}
+                    placeholder="5"
+                  />
+                  <FieldError msg={errors.area?.message} />
+                </div>
+                <div>
+                  <Label optional>Area Unit</Label>
+                  <select {...register("landAreaUnit")} className={selectCls}>
+                    <option value="">Select unit…</option>
+                    <option value="Katha">Katha</option>
+                    <option value="Decimal">Decimal / Shotangsho</option>
+                    <option value="Bigha">Bigha</option>
+                    <option value="sqft">sq ft</option>
+                  </select>
+                  <FieldError msg={errors.landAreaUnit?.message} />
+                </div>
+                <div>
+                  <Label optional>Road Width (ft)</Label>
+                  <input
+                    {...register("roadWidth", numericOpts)}
+                    type="number"
+                    step="0.1"
+                    className={inputCls}
+                    placeholder="20"
+                  />
+                  <FieldError msg={errors.roadWidth?.message} />
+                </div>
+              </div>
+              <div className="max-w-sm">
+                <Label optional>Land Use</Label>
+                <select {...register("landUse")} className={selectCls}>
+                  <option value="">Select…</option>
+                  {LAND_USE_OPTIONS.map((v) => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
+                <FieldError msg={errors.landUse?.message} />
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── Location ── */}
       <section className="bg-brand-surface border border-gold/15 p-6 space-y-5">
-        <h2 className="font-heading font-light text-brand-text text-xl mb-1">
-          Location
-        </h2>
+        <h2 className="font-heading font-light text-brand-text text-xl mb-1">Location</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
@@ -328,7 +461,7 @@ export default function PropertyForm({
             <Label>City *</Label>
             <select {...register("city")} className={selectCls}>
               <option value="">Select…</option>
-              {["Dhaka", "Chittagong", "Sylhet", "Rajshahi"].map((c) => (
+              {["Dhaka", "Chittagong", "Cox's Bazar", "Mymensingh"].map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
@@ -338,7 +471,7 @@ export default function PropertyForm({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
-            <Label>Latitude</Label>
+            <Label optional>Latitude</Label>
             <input
               {...register("latitude", numericOpts)}
               type="number"
@@ -348,7 +481,7 @@ export default function PropertyForm({
             />
           </div>
           <div>
-            <Label>Longitude</Label>
+            <Label optional>Longitude</Label>
             <input
               {...register("longitude", numericOpts)}
               type="number"
@@ -362,9 +495,7 @@ export default function PropertyForm({
 
       {/* ── Images ── */}
       <section className="bg-brand-surface border border-gold/15 p-6 space-y-4">
-        <h2 className="font-heading font-light text-brand-text text-xl mb-1">
-          Images
-        </h2>
+        <h2 className="font-heading font-light text-brand-text text-xl mb-1">Images</h2>
 
         {images.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -461,7 +592,9 @@ export default function PropertyForm({
       </section>
 
       {serverError && (
-        <p className="font-body text-sm text-red-400">{serverError}</p>
+        <p className="font-body text-sm text-red-400 border border-red-400/20 bg-red-400/5 px-4 py-3">
+          {serverError}
+        </p>
       )}
 
       <div className="flex items-center gap-4 pt-2">
