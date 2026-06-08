@@ -27,13 +27,14 @@ export default function ChatWidget() {
     const text = input.trim();
     if (!text || loading) return;
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", text }]);
+    const newHistory: Message[] = [...messages, { role: "user", text }];
+    setMessages(newHistory);
     setLoading(true);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ messages: newHistory }),
       });
       const data = await res.json();
       setMessages((prev) => [
