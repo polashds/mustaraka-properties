@@ -36,53 +36,101 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="2. Information We Collect">
-            <p>We may collect the following categories of information:</p>
+            <p>
+              We collect personal information only when you actively provide it to us. Depending on
+              how you contact us, this may include:
+            </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>
-                <strong className="text-brand-text">Contact information</strong> — name, email address, phone number
+                <strong className="text-brand-text">Name</strong> — so we know who we&apos;re speaking with
               </li>
               <li>
-                <strong className="text-brand-text">Enquiry details</strong> — messages you send us regarding properties or services
+                <strong className="text-brand-text">Phone number</strong> — for WhatsApp or call follow-ups
               </li>
               <li>
-                <strong className="text-brand-text">Usage data</strong> — pages visited, time spent, referral source (collected anonymously via analytics)
+                <strong className="text-brand-text">Email address</strong> — if you choose to provide one
+              </li>
+              <li>
+                <strong className="text-brand-text">Your message</strong> — the enquiry or question you submitted
               </li>
             </ul>
+            <p>We collect this information through three channels:</p>
+            <ul className="list-disc list-inside space-y-1 pl-2">
+              <li>
+                <strong className="text-brand-text">Contact form</strong> — the enquiry form on our website
+              </li>
+              <li>
+                <strong className="text-brand-text">Facebook lead ads</strong> — if you submit a lead form on our Facebook or Instagram ads
+              </li>
+              <li>
+                <strong className="text-brand-text">Website chatbot</strong> — if you share your name and phone while chatting with our AI assistant
+              </li>
+            </ul>
+            <p>
+              We also collect anonymous usage data (pages visited, time on site, referral source)
+              via analytics tools. This data cannot be used to identify you personally.
+            </p>
           </Section>
 
           <Section title="3. How We Use Your Information">
-            <p>We use collected information to:</p>
+            <p>We use your information solely to:</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>Respond to your enquiries and provide the services you request</li>
-              <li>Send property listings or updates you have explicitly requested</li>
+              <li>Respond to your property enquiry by phone, WhatsApp, or email</li>
+              <li>Follow up with relevant listings or information you requested</li>
               <li>Improve our website and service quality</li>
               <li>Comply with legal obligations</li>
             </ul>
-            <p>We do not sell, trade, or rent your personal information to third parties.</p>
+            <p>We do not sell your personal information. We do not send unsolicited marketing.</p>
+            <p>
+              <strong className="text-brand-text">Third-party processors.</strong> To operate our
+              business, your data may pass through the following services, each bound by their own
+              privacy policies:
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-2">
+              <li>
+                <strong className="text-brand-text">Meta (Facebook / Instagram)</strong> — when you submit a lead form via our ads
+              </li>
+              <li>
+                <strong className="text-brand-text">Google</strong> — for analytics and advertising measurement
+              </li>
+              <li>
+                <strong className="text-brand-text">Automation tools</strong> — we use workflow automation software (such as n8n) to route your enquiry to our team and log it in our CRM. These tools process your data on our behalf and do not use it for any other purpose.
+              </li>
+            </ul>
           </Section>
 
           <Section title="4. Data Retention">
             <p>
-              We retain your personal information for as long as necessary to fulfil the purposes
-              outlined in this policy, unless a longer retention period is required by law. Enquiry
-              records are typically retained for 24 months from the date of submission.
+              We keep enquiry records — including name, phone, email, and message — for{" "}
+              <strong className="text-brand-text">24 months</strong> from the date of submission.
+              After that period, records are deleted unless we are required by law to keep them
+              longer or an ongoing business relationship exists.
+            </p>
+            <p>
+              Anonymous analytics data does not contain personal information and is retained
+              according to the terms of the analytics provider.
             </p>
           </Section>
 
-          <Section title="5. Your Rights">
+          <Section title="5. Your Rights &amp; Data Deletion">
             <p>You have the right to:</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Access the personal information we hold about you</li>
               <li>Request correction of inaccurate data</li>
-              <li>Request deletion of your data (subject to legal obligations)</li>
+              <li>
+                <strong className="text-brand-text">Request deletion of your data</strong> — we
+                will remove your records within 14 days of a verified request, subject to any legal
+                obligations to retain them
+              </li>
               <li>Withdraw consent at any time where processing is based on consent</li>
             </ul>
             <p>
-              To exercise any of these rights, contact us at{" "}
+              To exercise any of these rights — including requesting deletion — email us at{" "}
               <a href="mailto:info@mustarakaproperties.com" className="text-gold hover:underline">
                 info@mustarakaproperties.com
-              </a>
-              .
+              </a>{" "}
+              with the subject line <em>&ldquo;Data Request&rdquo;</em>. Please include the name and
+              contact details you used when submitting your enquiry so we can locate your record.
             </p>
           </Section>
 
