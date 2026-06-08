@@ -7,6 +7,62 @@ import { z } from "zod";
 import Image from "next/image";
 import { createProperty, updateProperty } from "@/lib/admin-actions";
 
+// ── Image compression ─────────────────────────────────────────────────────────
+
+const MAX_DIM = 1600;
+const JPEG_QUALITY = 0.82; // targets ~300–500 KB per photo
+const MAX_COMPRESSED_BYTES = 2 * 1024 * 1024; // 2 MB hard cap per image
+
+interface CompressedImage {
+  blob: Blob;
+  previewUrl: string;
+  name: string;
+  sizeKb: number;
+}
+
+function compressImage(file: File): Promise<CompressedImage> {
+  return new Promise((resolve, reject) => {
+    const img = document.createElement("img");
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      let { width, height } = img;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width >= height) {
+          height = Math.round((height * MAX_DIM) / width);
+          width = MAX_DIM;
+        } else {
+          width = Math.round((width * MAX_DIM) / height);
+          height = MAX_DIM;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas unavailable")); return; }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error("Compression failed")); return; }
+          const previewUrl = URL.createObjectURL(blob);
+          const name = file.name.replace(/\.[^.]+$/, ".jpg");
+          resolve({ blob, previewUrl, name, sizeKb: Math.round(blob.size / 1024) });
+        },
+        "image/jpeg",
+        JPEG_QUALITY
+      );
+    };
+
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Image load failed")); };
+    img.src = objectUrl;
+  });
+}
+
 // ── Zod schema ────────────────────────────────────────────────────────────────
 
 const nullablePositiveInt = z
@@ -47,19 +103,14 @@ const PropertyFormSchema = z.object({
   type: z.enum(["Apartment", "House", "Commercial", "Land"]),
   listingType: z.enum(["Sale", "Rent"]),
   status: z.enum(["Draft", "Published"]),
-  // residential
   bedrooms: nullablePositiveInt,
   bathrooms: nullablePositiveInt,
   floor: nullableNonNegInt,
-  // shared area field (sqft for residential/commercial; land area for Land)
   area: nullablePositiveFloat,
-  // commercial
   parking: nullableNonNegInt,
-  // land
   landAreaUnit: z.enum(LAND_AREA_UNITS).optional().nullable(),
   roadWidth: nullablePositiveFloat,
   landUse: z.string().optional().nullable(),
-  // location
   address: z.string().min(1, "Address is required"),
   city: z.string().min(1, "City is required"),
   latitude: nullableFloat,
@@ -124,8 +175,9 @@ export default function PropertyForm({
   existingImages = [],
 }: PropertyFormProps) {
   const [images, setImages] = useState<ExistingImage[]>(existingImages);
-  const [newFiles, setNewFiles] = useState<File[]>([]);
-  const [newPreviews, setNewPreviews] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<CompressedImage[]>([]);
+  const [compressing, setCompressing] = useState(false);
+  const [imageErrors, setImageErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -160,12 +212,36 @@ export default function PropertyForm({
     }
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    setNewFiles((prev) => [...prev, ...files]);
-    setNewPreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
     if (fileInputRef.current) fileInputRef.current.value = "";
+
+    setCompressing(true);
+    setImageErrors([]);
+
+    const errs: string[] = [];
+    const compressed: CompressedImage[] = [];
+
+    for (const file of files) {
+      try {
+        const result = await compressImage(file);
+        if (result.blob.size > MAX_COMPRESSED_BYTES) {
+          URL.revokeObjectURL(result.previewUrl);
+          errs.push(
+            `"${file.name}" is still ${result.sizeKb} KB after compression — please use a smaller image.`
+          );
+        } else {
+          compressed.push(result);
+        }
+      } catch {
+        errs.push(`"${file.name}" could not be processed. Try a different file.`);
+      }
+    }
+
+    setNewImages((prev) => [...prev, ...compressed]);
+    if (errs.length) setImageErrors(errs);
+    setCompressing(false);
   }
 
   function removeExisting(idx: number) {
@@ -173,9 +249,8 @@ export default function PropertyForm({
   }
 
   function removeNew(idx: number) {
-    URL.revokeObjectURL(newPreviews[idx]);
-    setNewFiles((prev) => prev.filter((_, i) => i !== idx));
-    setNewPreviews((prev) => prev.filter((_, i) => i !== idx));
+    URL.revokeObjectURL(newImages[idx].previewUrl);
+    setNewImages((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function onSubmit(data: PropertyFormValues) {
@@ -193,10 +268,9 @@ export default function PropertyForm({
 
     try {
       if (mode === "create") {
-        newFiles.forEach((f) => fd.append("images", f));
-        newFiles.forEach(() => fd.append("imageAlts", ""));
+        newImages.forEach((img) => fd.append("images", img.blob, img.name));
+        newImages.forEach(() => fd.append("imageAlts", ""));
         const result = await createProperty(fd);
-        // result is only returned on validation error; redirect() on success navigates away
         if (result?.errors) {
           const msgs = Object.values(result.errors).flat().join(" ");
           setServerError(msgs || "Validation failed — check the fields above.");
@@ -204,8 +278,8 @@ export default function PropertyForm({
         }
       } else if (mode === "edit" && propertyId !== undefined) {
         fd.append("existingImages", JSON.stringify(images));
-        newFiles.forEach((f) => fd.append("newImages", f));
-        newFiles.forEach(() => fd.append("newImageAlts", ""));
+        newImages.forEach((img) => fd.append("newImages", img.blob, img.name));
+        newImages.forEach(() => fd.append("newImageAlts", ""));
         const result = await updateProperty(propertyId, fd);
         if (result?.errors) {
           const msgs = Object.values(result.errors).flat().join(" ");
@@ -214,8 +288,6 @@ export default function PropertyForm({
         }
       }
     } catch {
-      // redirect() throws NEXT_REDIRECT — that means success. Any other throw is a real error.
-      // We can't distinguish them here, so only reset on unexpected errors by checking the message.
       setServerError("An unexpected error occurred. Please try again.");
       setSubmitting(false);
     }
@@ -312,7 +384,6 @@ export default function PropertyForm({
             Specifications
           </h2>
 
-          {/* Residential: Apartment / House */}
           {isResidential && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
               <div>
@@ -362,7 +433,6 @@ export default function PropertyForm({
             </div>
           )}
 
-          {/* Commercial */}
           {isCommercial && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
@@ -390,7 +460,6 @@ export default function PropertyForm({
             </div>
           )}
 
-          {/* Land / Plot */}
           {isLand && (
             <div className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -497,6 +566,7 @@ export default function PropertyForm({
       <section className="bg-brand-surface border border-gold/15 p-6 space-y-4">
         <h2 className="font-heading font-light text-brand-text text-xl mb-1">Images</h2>
 
+        {/* Saved images (edit mode) */}
         {images.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {images.map((img, i) => (
@@ -514,6 +584,7 @@ export default function PropertyForm({
                   type="button"
                   onClick={() => removeExisting(i)}
                   className="absolute top-1 right-1 w-6 h-6 bg-red-600/80 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Remove image"
                 >
                   ×
                 </button>
@@ -522,42 +593,73 @@ export default function PropertyForm({
           </div>
         )}
 
-        {newPreviews.length > 0 && (
+        {/* New compressed images queued for upload */}
+        {newImages.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {newPreviews.map((src, i) => (
+            {newImages.map((img, i) => (
               <div key={i} className="relative group">
                 <div className="aspect-video relative overflow-hidden border border-gold/30">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`New ${i + 1}`} className="w-full h-full object-cover" />
+                  <img src={img.previewUrl} alt={`New ${i + 1}`} className="w-full h-full object-cover" />
                 </div>
                 <button
                   type="button"
                   onClick={() => removeNew(i)}
                   className="absolute top-1 right-1 w-6 h-6 bg-red-600/80 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Remove image"
                 >
                   ×
                 </button>
-                <span className="absolute bottom-1 left-1 font-body text-[9px] text-white/70 bg-black/50 px-1">
-                  New
+                <span className="absolute bottom-1 left-1 font-body text-[9px] text-white/70 bg-black/50 px-1.5 py-0.5">
+                  {img.sizeKb} KB
                 </span>
               </div>
             ))}
           </div>
         )}
 
-        <label className="flex items-center gap-3 border border-dashed border-gold/25 px-5 py-4 cursor-pointer hover:border-gold/50 transition-colors">
-          <svg className="text-gold/60 shrink-0" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.338-2.32 5.5 5.5 0 0 1 5.072 6.095A4.5 4.5 0 0 1 17.25 19.5H6.75Z" />
-          </svg>
-          <span className="font-body text-sm text-brand-muted">
-            Click to upload images (JPG, PNG, WEBP)
-          </span>
+        {/* Upload errors */}
+        {imageErrors.length > 0 && (
+          <div className="border border-red-400/25 bg-red-400/5 px-4 py-3 space-y-1">
+            {imageErrors.map((e, i) => (
+              <p key={i} className="font-body text-xs text-red-400">{e}</p>
+            ))}
+          </div>
+        )}
+
+        {/* Drop zone / file picker */}
+        <label
+          className={`flex items-center gap-3 border border-dashed px-5 py-4 transition-colors ${
+            compressing
+              ? "border-gold/40 cursor-wait"
+              : "border-gold/25 cursor-pointer hover:border-gold/50"
+          }`}
+        >
+          {compressing ? (
+            <>
+              <svg className="text-gold/60 shrink-0 animate-spin" width="20" height="20" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              <span className="font-body text-sm text-brand-muted">Compressing photos…</span>
+            </>
+          ) : (
+            <>
+              <svg className="text-gold/60 shrink-0" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.338-2.32 5.5 5.5 0 0 1 5.072 6.095A4.5 4.5 0 0 1 17.25 19.5H6.75Z" />
+              </svg>
+              <span className="font-body text-sm text-brand-muted">
+                Click to upload images — auto-compressed to ~300–500 KB each
+              </span>
+            </>
+          )}
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             multiple
             className="sr-only"
+            disabled={compressing}
             onChange={handleFileChange}
           />
         </label>
@@ -600,7 +702,7 @@ export default function PropertyForm({
       <div className="flex items-center gap-4 pt-2">
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || compressing}
           className="px-8 py-3 bg-gold text-brand-bg font-body text-xs font-medium tracking-[0.15em] uppercase hover:bg-gold-light transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {submitting ? "Saving…" : mode === "create" ? "Create Property" : "Save Changes"}
