@@ -72,9 +72,9 @@ export default function ChatWidget() {
       {/* ── Chat panel ─────────────────────────────────────────────────────── */}
       {open && (
         <div
-          className="w-[320px] sm:w-[380px] flex flex-col bg-[#111] border border-gold/30 overflow-hidden animate-slide-up"
+          className="w-[min(320px,calc(100vw-1.5rem))] sm:w-[380px] flex flex-col bg-[#111] border border-gold/30 overflow-hidden animate-slide-up"
           style={{
-            height: 580,
+            height: "min(580px, calc(100dvh - 100px))",
             boxShadow: "0 24px 64px rgba(0,0,0,0.85), 0 0 0 1px rgba(201,168,76,0.08)",
           }}
         >

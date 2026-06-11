@@ -71,7 +71,7 @@ export default function ServicesPage() {
             </p>
             <span className="h-px w-8 bg-gold/40" />
           </div>
-          <h1 className="font-heading font-light text-brand-text text-5xl sm:text-6xl leading-[1.08] mb-8">
+          <h1 className="font-heading font-light text-brand-text text-[1.75rem] sm:text-5xl md:text-6xl leading-[1.08] mb-8">
             Full-Service<br />
             <span className="italic text-gold">Real Estate</span>
           </h1>

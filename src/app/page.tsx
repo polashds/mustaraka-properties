@@ -232,7 +232,7 @@ export default async function HomePage() {
           </p>
 
           {/* Headline */}
-          <h1 className="font-heading font-light text-brand-text leading-[1.02] text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] mb-8">
+          <h1 className="font-heading font-light text-brand-text leading-[1.08] text-[1.75rem] sm:text-5xl md:text-7xl lg:text-[5.5rem] mb-8">
             Find Your{" "}
             <em className="italic text-gold">Perfect</em>
             <br />
