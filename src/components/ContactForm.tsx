@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { submitContact } from "@/lib/actions";
+import { trackGA4Lead, trackPixelLead } from "@/lib/analytics";
 
 export default function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
@@ -13,6 +14,8 @@ export default function ContactForm() {
     startTransition(async () => {
       await submitContact(formData);
       setSubmitted(true);
+      trackGA4Lead();
+      trackPixelLead();
     });
   }
 

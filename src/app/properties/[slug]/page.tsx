@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 import { formatPrice } from "@/lib/format";
 import ImageGallery from "@/components/ImageGallery";
 import InquiryForm from "@/components/InquiryForm";
+import ViewContentTracker from "@/components/analytics/ViewContentTracker";
 
 type Params = Promise<{ slug: string }>;
 
@@ -100,6 +101,7 @@ export default async function PropertyDetailPage({
 
   return (
     <div className="bg-brand-bg min-h-screen">
+      <ViewContentTracker name={property.title} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(listingSchema) }}

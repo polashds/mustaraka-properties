@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from "react";
 import { submitContact } from "@/lib/actions";
+import { trackGA4Lead, trackPixelLead } from "@/lib/analytics";
 
 const inputCls =
   "w-full bg-brand-bg border border-gold/15 text-brand-text placeholder:text-brand-muted/40 font-body text-sm px-4 py-3 focus:outline-none focus:border-gold/50 transition-colors";
@@ -45,6 +46,8 @@ export default function HomeLeadForm() {
         const result = await submitContact(submitFd);
         if (result?.success) {
           setDone(true);
+          trackGA4Lead();
+          trackPixelLead();
           formRef.current?.reset();
         } else {
           setServerError(true);

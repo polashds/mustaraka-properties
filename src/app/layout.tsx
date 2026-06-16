@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import PublicShell from "@/components/PublicShell";
+import GA4Script from "@/components/analytics/GA4Script";
+import MetaPixelScript from "@/components/analytics/MetaPixelScript";
 
 const cormorant = Cormorant_Garamond({
   weight: ["300", "400"],
@@ -75,6 +77,8 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-brand-bg text-brand-text font-body antialiased flex flex-col min-h-screen">
+        <GA4Script />
+        <MetaPixelScript />
         <PublicShell>{children}</PublicShell>
       </body>
     </html>

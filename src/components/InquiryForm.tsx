@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { submitInquiry } from "@/lib/actions";
+import { trackGA4Lead, trackPixelLead } from "@/lib/analytics";
 
 interface Props {
   propertyTitle: string;
@@ -20,6 +21,8 @@ export default function InquiryForm({ propertyTitle, propertyId }: Props) {
     startTransition(async () => {
       await submitInquiry(formData);
       setSubmitted(true);
+      trackGA4Lead();
+      trackPixelLead();
     });
   }
 

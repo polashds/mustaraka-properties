@@ -1,5 +1,7 @@
 "use client";
 
+import { trackContact } from "@/lib/analytics";
+
 const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
 
 export default function WhatsAppButton() {
@@ -15,6 +17,7 @@ export default function WhatsAppButton() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp"
+      onClick={() => trackContact()}
       className="fixed bottom-24 right-6 z-50 w-14 h-14 rounded-full bg-whatsapp hover:brightness-110 text-white shadow-lg flex items-center justify-center transition-all duration-200"
     >
       <svg

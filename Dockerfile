@@ -10,6 +10,10 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
+ARG NEXT_PUBLIC_GA4_ID
+ARG NEXT_PUBLIC_META_PIXEL_ID
+ENV NEXT_PUBLIC_GA4_ID=$NEXT_PUBLIC_GA4_ID
+ENV NEXT_PUBLIC_META_PIXEL_ID=$NEXT_PUBLIC_META_PIXEL_ID
 RUN npx prisma generate
 RUN npm run build
 
