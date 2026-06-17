@@ -34,7 +34,6 @@ export default function Header() {
               alt="Mustaraka Properties"
               width={160}
               height={44}
-              style={{ height: "auto" }}
               className="h-11 w-auto object-contain"
               priority
             />
@@ -114,7 +113,6 @@ export default function Header() {
               alt="Mustaraka Properties"
               width={120}
               height={33}
-              style={{ height: "auto" }}
               className="h-8 w-auto object-contain"
             />
           </Link>
