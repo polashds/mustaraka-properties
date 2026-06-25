@@ -28,20 +28,29 @@ export const metadata: Metadata = {
     template: "%s — Mustaraka Properties",
   },
   description:
-    "Discover premium apartments, homes, and commercial spaces across Dhaka, Chittagong, Sylhet, and Rajshahi.",
+    "Discover premium apartments, homes, and commercial spaces across Dhaka, Chittagong, Cox's Bazar, and Mymensingh.",
   openGraph: {
     type: "website",
     siteName: "Mustaraka Properties",
     title: "Mustaraka Properties — Premium Real Estate in Bangladesh",
     description:
-      "Discover premium apartments, homes, and commercial spaces across Dhaka, Chittagong, Sylhet, and Rajshahi.",
+      "Discover premium apartments, homes, and commercial spaces across Dhaka, Chittagong, Cox's Bazar, and Mymensingh.",
     url: BASE,
+    images: [
+      {
+        url: `${BASE}/assets/logo.png`,
+        width: 1200,
+        height: 630,
+        alt: "Mustaraka Properties — Premium Real Estate in Bangladesh",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Mustaraka Properties — Premium Real Estate in Bangladesh",
     description:
-      "Discover premium apartments, homes, and commercial spaces across Dhaka, Chittagong, Sylhet, and Rajshahi.",
+      "Discover premium apartments, homes, and commercial spaces across Dhaka, Chittagong, Cox's Bazar, and Mymensingh.",
+    images: [`${BASE}/assets/logo.png`],
   },
 };
 
@@ -54,13 +63,13 @@ const localBusinessSchema = {
     ? `+${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}`
     : undefined,
   description:
-    "Premium real estate brokerage specialising in residential and commercial properties across Dhaka, Chittagong, Sylhet, and Rajshahi.",
+    "Premium real estate brokerage specialising in residential and commercial properties across Dhaka, Chittagong, Cox's Bazar, and Mymensingh.",
   address: {
     "@type": "PostalAddress",
     addressCountry: "BD",
     addressRegion: "Dhaka",
   },
-  areaServed: ["Dhaka", "Chittagong", "Sylhet", "Rajshahi"],
+  areaServed: ["Dhaka", "Chittagong", "Cox's Bazar", "Mymensingh"],
 };
 
 export default function RootLayout({

@@ -1,7 +1,9 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { sendCAPIEvent } from "@/lib/capi";
 
 export const dynamic = "force-dynamic";
 import { formatPrice } from "@/lib/format";
@@ -56,6 +58,25 @@ export default async function PropertyDetailPage({
   if (!property) notFound();
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mustarakaproperties.com";
+
+  const h = await headers();
+  void sendCAPIEvent({
+    eventName: "ViewContent",
+    eventSourceUrl: `${siteUrl}/properties/${slug}`,
+    userData: {
+      clientIp: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? undefined,
+      clientUserAgent: h.get("user-agent") ?? undefined,
+      fbc: h.get("cookie")?.match(/_fbc=([^;]+)/)?.[1],
+      fbp: h.get("cookie")?.match(/_fbp=([^;]+)/)?.[1],
+    },
+    customData: {
+      content_name: property.title,
+      content_type: property.type,
+      content_ids: [String(property.id)],
+      value: property.price.toNumber(),
+      currency: "BDT",
+    },
+  });
   const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
   const waMessage = encodeURIComponent(
     `Hello, I am interested in: ${property.title}`
